@@ -20,6 +20,16 @@ class Prado_Welcome_Guest_View {
      * Intercept requests starting with /g/TOKEN
      */
     public static function handle_routing() {
+        // Query arg fallback: ?g=TOKEN
+        if (isset($_GET['g']) && !empty($_GET['g'])) {
+            $token = sanitize_text_field($_GET['g']);
+            if (preg_match('/^[a-zA-Z0-9]+$/', $token)) {
+                $view = new self();
+                $view->render($token);
+                exit;
+            }
+        }
+
         $request_uri = $_SERVER['REQUEST_URI'];
         $path = parse_url($request_uri, PHP_URL_PATH);
 

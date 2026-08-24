@@ -180,6 +180,13 @@ class Prado_Welcome_REST_API {
             'callback' => array(__CLASS__, 'get_subscription_status'),
             'permission_callback' => $logged_in_check,
         ));
+
+        // DB Setup Utility
+        register_rest_route($namespace, '/db-setup', array(
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => array(__CLASS__, 'run_db_setup'),
+            'permission_callback' => $logged_in_check,
+        ));
     }
 
     /**
@@ -251,13 +258,28 @@ class Prado_Welcome_REST_API {
         );
         $upcoming = $wpdb->get_results($upcoming_query);
 
+        // Check if database tables exist
+        $tables = array('properties', 'reservations', 'guests', 'guides', 'tokens', 'content', 'contacts', 'places', 'subscriptions');
+        $missing = array();
+        foreach ($tables as $t) {
+            $table_name = Prado_Welcome_Database::get_table_name($t);
+            $exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+            if (!$exists) {
+                $missing[] = $t;
+            }
+        }
+
         return new WP_REST_Response(array(
             'properties' => intval($properties_count),
             'active_reservations' => intval($active_reservations),
             'active_guides' => intval($active_guides),
             'expired_guides' => intval($expired_guides),
             'upcoming' => $upcoming,
-            'plan_status' => Prado_Welcome_WC_Integration::get_user_plan_status($user_id)
+            'plan_status' => Prado_Welcome_WC_Integration::get_user_plan_status($user_id),
+            'db_status' => array(
+                'ok' => empty($missing),
+                'missing' => $missing
+            )
         ), 200);
     }
 
@@ -943,5 +965,37 @@ class Prado_Welcome_REST_API {
         }
 
         return new WP_REST_Response($sub, 200);
+    }
+
+    /**
+     * Re-run database setup and verify
+     */
+    public static function run_db_setup($request) {
+        global $wpdb;
+        Prado_Welcome_Database::create_tables();
+
+        $tables = array('properties', 'reservations', 'guests', 'guides', 'tokens', 'content', 'contacts', 'places', 'subscriptions');
+        $missing = array();
+        foreach ($tables as $t) {
+            $table_name = Prado_Welcome_Database::get_table_name($t);
+            $exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+            if (!$exists) {
+                $missing[] = $table_name;
+            }
+        }
+
+        if (!empty($missing)) {
+            return new WP_REST_Response(array(
+                'success' => false,
+                'message' => 'Algumas tabelas não puderam ser criadas: ' . implode(', ', $missing),
+                'last_error' => $wpdb->last_error
+            ), 500);
+        }
+
+        update_option('prado_welcome_db_version', '1.0.0');
+        return new WP_REST_Response(array(
+            'success' => true,
+            'message' => 'Banco de dados configurado e verificado com sucesso!'
+        ), 200);
     }
 }

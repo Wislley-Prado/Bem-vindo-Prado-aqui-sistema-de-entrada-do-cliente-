@@ -28,6 +28,16 @@ require_once PRADO_WELCOME_PATH . 'includes/class-guest-view.php';
 register_activation_hook(__FILE__, 'prado_welcome_activate_plugin');
 function prado_welcome_activate_plugin() {
     Prado_Welcome_Database::create_tables();
+    update_option('prado_welcome_db_version', '1.0.0');
+}
+
+// Auto-run DB checks on init if version mismatch (defensive self-healing)
+add_action('plugins_loaded', 'prado_welcome_check_db');
+function prado_welcome_check_db() {
+    if (get_option('prado_welcome_db_version') !== '1.0.0') {
+        Prado_Welcome_Database::create_tables();
+        update_option('prado_welcome_db_version', '1.0.0');
+    }
 }
 
 // Initialize Plugin Subsystems
@@ -77,7 +87,9 @@ function prado_welcome_enqueue_admin_assets($hook) {
     // Localize Data for Rest API calls
     wp_localize_script('prado-welcome-admin-spa', 'pradoWelcomeData', array(
         'root' => esc_url_raw(rest_url()),
-        'nonce' => wp_create_nonce('wp_rest')
+        'nonce' => wp_create_nonce('wp_rest'),
+        'home_url' => esc_url_raw(home_url('/')),
+        'use_pretty_links' => get_option('permalink_structure') ? true : false
     ));
 }
 
@@ -132,6 +144,18 @@ function prado_welcome_render_admin_spa_wrapper() {
 
                 <!-- 1. VIEW: DASHBOARD -->
                 <section class="app-view active" id="view-dashboard">
+                    
+                    <!-- Database Warning self-healing banner -->
+                    <div id="db-warning-banner" style="display:none; background:rgba(239, 68, 68, 0.08); border:1px dashed var(--color-danger); border-radius:var(--radius-md); padding:16px; margin-bottom:24px;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <i class="fa-solid fa-circle-exclamation" style="font-size:20px; color:var(--color-danger);"></i>
+                            <div>
+                                <h4 style="margin:0; font-size:14.5px; font-weight:700; color:var(--text-primary);">Atenção: Tabelas do banco de dados não encontradas</h4>
+                                <p style="margin:4px 0 0 0; font-size:13px; color:var(--text-secondary);">O plugin não conseguiu criar as tabelas automáticas no banco. <a href="#" id="btn-fix-db" style="color:var(--color-primary); font-weight:600; text-decoration:underline;">Clique aqui para corrigir automaticamente</a></p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="stats-grid">
                         <div class="stat-card blue">
                             <div class="stat-header">
@@ -655,7 +679,7 @@ function prado_welcome_render_admin_spa_wrapper() {
         <!-- ============================================== -->
         <div class="prado-modal" id="modal-property">
             <div class="modal-overlay"></div>
-            <form onsubmit="saveProperty(event)" class="modal-container">
+            <form onsubmit="saveProperty(event)" class="modal-container" id="form-property">
                 <div class="modal-header">
                     <h3 id="modal-property-title">Cadastrar Novo Imóvel</h3>
                     <button class="btn-modal-close" type="button"><i class="fa-solid fa-xmark"></i></button>
@@ -729,7 +753,7 @@ function prado_welcome_render_admin_spa_wrapper() {
         <!-- ============================================== -->
         <div class="prado-modal" id="modal-guest">
             <div class="modal-overlay"></div>
-            <form onsubmit="saveGuest(event)" class="modal-container">
+            <form onsubmit="saveGuest(event)" class="modal-container" id="form-guest">
                 <div class="modal-header">
                     <h3 id="modal-guest-title">Cadastrar Novo Hóspede</h3>
                     <button class="btn-modal-close" type="button"><i class="fa-solid fa-xmark"></i></button>
@@ -767,7 +791,7 @@ function prado_welcome_render_admin_spa_wrapper() {
         <!-- ============================================== -->
         <div class="prado-modal" id="modal-reservation">
             <div class="modal-overlay"></div>
-            <form onsubmit="saveReservation(event)" class="modal-container">
+            <form onsubmit="saveReservation(event)" class="modal-container" id="form-reservation">
                 <div class="modal-header">
                     <h3 id="modal-reservation-title">Nova Reserva</h3>
                     <button class="btn-modal-close" type="button"><i class="fa-solid fa-xmark"></i></button>

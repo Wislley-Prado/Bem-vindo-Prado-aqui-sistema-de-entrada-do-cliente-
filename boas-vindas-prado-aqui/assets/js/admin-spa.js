@@ -175,6 +175,32 @@ function renderCurrentView() {
  * 1. Dashboard View
  */
 function renderDashboard() {
+    // Check database status (defensive check)
+    const dbWarning = document.getElementById('db-warning-banner');
+    if (dbWarning) {
+        if (AppState.stats.db_status && !AppState.stats.db_status.ok) {
+            dbWarning.style.display = 'block';
+            const fixBtn = document.getElementById('btn-fix-db');
+            if (fixBtn) {
+                fixBtn.onclick = (e) => {
+                    e.preventDefault();
+                    showLoader(true);
+                    API.request('db-setup', 'POST')
+                        .then(res => {
+                            showToast(res.message || 'Banco de dados corrigido!');
+                            loadAllData();
+                        })
+                        .catch(err => {
+                            showLoader(false);
+                            alert(err.message || 'Erro ao corrigir banco de dados.');
+                        });
+                };
+            }
+        } else {
+            dbWarning.style.display = 'none';
+        }
+    }
+
     // Populate stats
     document.getElementById('stat-properties').innerText = AppState.stats.properties;
     document.getElementById('stat-reservations').innerText = AppState.stats.active_reservations;
@@ -195,7 +221,10 @@ function renderDashboard() {
             const badgeClass = item.guide_status === 'active' ? 'badge-active' : (item.guide_status === 'revoked' ? 'badge-revoked' : 'badge-expired');
             const statusLabel = item.guide_status === 'active' ? 'Ativo' : (item.guide_status === 'revoked' ? 'Revogado' : 'Expirado');
 
-            const guideLink = `${window.location.origin}/g/${item.token}`;
+            // Format Link dynamically based on localized permalinks config
+            const guideLink = pradoWelcomeData.use_pretty_links 
+                ? `${pradoWelcomeData.home_url}g/${item.token}`
+                : `${pradoWelcomeData.home_url}?g=${item.token}`;
 
             tr.innerHTML = `
                 <td><strong>${escapeHTML(item.guest_name)}</strong></td>
@@ -514,7 +543,9 @@ function renderReservations() {
             
             const badgeClass = r.guide_status === 'active' ? 'badge-active' : (r.guide_status === 'revoked' ? 'badge-revoked' : 'badge-expired');
             const statusLabel = r.guide_status === 'active' ? 'Ativo' : (r.guide_status === 'revoked' ? 'Revogado' : 'Expirado');
-            const guideLink = `${window.location.origin}/g/${r.token}`;
+            const guideLink = pradoWelcomeData.use_pretty_links 
+                ? `${pradoWelcomeData.home_url}g/${r.token}`
+                : `${pradoWelcomeData.home_url}?g=${r.token}`;
 
             const revokeBtn = r.guide_status === 'active'
                 ? `<button class="btn-icon-only" onclick="toggleGuideRevocation(${r.id}, 'revoke')" title="Revogar/Bloquear Guia" style="color:var(--color-danger);"><i class="fa-solid fa-ban"></i></button>`
@@ -548,10 +579,25 @@ function renderReservations() {
 
 window.openAddReservationModal = function() {
     const form = document.getElementById('form-reservation');
-    form.reset();
-    document.getElementById('reservation-id-field').value = '';
-    document.getElementById('modal-reservation-title').innerText = 'Nova Reserva';
-    document.getElementById('res-property-id').disabled = false;
+    if (form) form.reset();
+    
+    const idField = document.getElementById('reservation-id-field');
+    if (idField) idField.value = '';
+    
+    const titleField = document.getElementById('modal-reservation-title');
+    if (titleField) titleField.innerText = 'Nova Reserva';
+    
+    const propSelect = document.getElementById('res-property-id');
+    if (propSelect) {
+        propSelect.disabled = false;
+        
+        // Populate properties dropdown dynamically (needed if opened from Dashboard view)
+        propSelect.innerHTML = '<option value="">Selecione um Imóvel</option>';
+        AppState.properties.forEach(p => {
+            propSelect.innerHTML += `<option value="${p.id}">${escapeHTML(p.name)}</option>`;
+        });
+    }
+    
     openModal('modal-reservation');
 };
 
@@ -560,13 +606,24 @@ window.openEditReservationModal = function(id) {
     if (!r) return;
 
     const form = document.getElementById('form-reservation');
-    form.reset();
+    if (form) form.reset();
 
-    document.getElementById('reservation-id-field').value = r.id;
-    document.getElementById('modal-reservation-title').innerText = 'Editar Reserva';
+    const idField = document.getElementById('reservation-id-field');
+    if (idField) idField.value = r.id;
 
-    document.getElementById('res-property-id').value = r.property_id;
-    document.getElementById('res-property-id').disabled = true; // Lock property swap during edit to avoid consistency problems
+    const titleField = document.getElementById('modal-reservation-title');
+    if (titleField) titleField.innerText = 'Editar Reserva';
+
+    const propSelect = document.getElementById('res-property-id');
+    if (propSelect) {
+        // Populate first so we don't have empty option selection error
+        propSelect.innerHTML = '<option value="">Selecione um Imóvel</option>';
+        AppState.properties.forEach(p => {
+            propSelect.innerHTML += `<option value="${p.id}">${escapeHTML(p.name)}</option>`;
+        });
+        propSelect.value = r.property_id;
+        propSelect.disabled = true; // Lock property swap during edit to avoid consistency problems
+    }
 
     document.getElementById('res-guest-name').value = r.guest_name;
     document.getElementById('res-guest-phone').value = r.guest_phone;
@@ -1221,7 +1278,9 @@ window.sendWhatsapp = function(guestName, guestPhone, propertyName, token) {
         return;
     }
 
-    const guideUrl = `${window.location.origin}/g/${token}`;
+    const guideUrl = pradoWelcomeData.use_pretty_links 
+        ? `${pradoWelcomeData.home_url}g/${token}`
+        : `${pradoWelcomeData.home_url}?g=${token}`;
     const guestFirstName = guestName.split(' ')[0] || guestName;
 
     let text = `Olá, *${guestFirstName}*! 👋\n\n`;
@@ -1243,7 +1302,9 @@ window.sendWhatsapp = function(guestName, guestPhone, propertyName, token) {
 let currentQrCodeInstance = null;
 
 window.openQrModal = function(token) {
-    const guideUrl = `${window.location.origin}/g/${token}`;
+    const guideUrl = pradoWelcomeData.use_pretty_links 
+        ? `${pradoWelcomeData.home_url}g/${token}`
+        : `${pradoWelcomeData.home_url}?g=${token}`;
     
     document.getElementById('qr-link-placeholder').innerText = guideUrl;
     
