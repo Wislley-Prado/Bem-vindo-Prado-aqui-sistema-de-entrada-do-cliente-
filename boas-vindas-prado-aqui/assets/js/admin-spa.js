@@ -314,7 +314,7 @@ window.openAddPropertyModal = function() {
 };
 
 window.openEditPropertyModal = function(id) {
-    const prop = AppState.properties.find(p => p.id === id);
+    const prop = AppState.properties.find(p => parseInt(p.id) === parseInt(id));
     if (!prop) return;
 
     const form = document.getElementById('form-property');
@@ -451,7 +451,7 @@ window.openAddGuestModal = function() {
 };
 
 window.openEditGuestModal = function(id) {
-    const g = AppState.guests.find(item => item.id === id);
+    const g = AppState.guests.find(item => parseInt(item.id) === parseInt(id));
     if (!g) return;
 
     const form = document.getElementById('form-guest');
@@ -602,7 +602,7 @@ window.openAddReservationModal = function() {
 };
 
 window.openEditReservationModal = function(id) {
-    const r = AppState.reservations.find(item => item.id === id);
+    const r = AppState.reservations.find(item => parseInt(item.id) === parseInt(id));
     if (!r) return;
 
     const form = document.getElementById('form-reservation');
@@ -716,7 +716,7 @@ function renderContentManager() {
     select.innerHTML = '<option value="">Selecione um imóvel para editar o conteúdo</option>';
     
     AppState.properties.forEach(p => {
-        const selectedAttr = AppState.activePropertyIdForContent === p.id ? 'selected' : '';
+        const selectedAttr = parseInt(AppState.activePropertyIdForContent) === parseInt(p.id) ? 'selected' : '';
         select.innerHTML += `<option value="${p.id}" ${selectedAttr}>${escapeHTML(p.name)}</option>`;
     });
 
