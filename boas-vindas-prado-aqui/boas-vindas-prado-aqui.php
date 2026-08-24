@@ -655,12 +655,11 @@ function prado_welcome_render_admin_spa_wrapper() {
         <!-- ============================================== -->
         <div class="prado-modal" id="modal-property">
             <div class="modal-overlay"></div>
-            <div class="modal-container">
+            <form onsubmit="saveProperty(event)" class="modal-container">
                 <div class="modal-header">
                     <h3 id="modal-property-title">Cadastrar Novo Imóvel</h3>
-                    <button class="btn-modal-close"><i class="fa-solid fa-xmark"></i></button>
+                    <button class="btn-modal-close" type="button"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <form onsubmit="saveProperty(event)">
                     <div class="modal-body">
                         <input type="hidden" id="property-id-field" value="" />
                         
@@ -722,8 +721,7 @@ function prado_welcome_render_admin_spa_wrapper() {
                         <button type="button" class="btn-admin btn-admin-secondary btn-modal-cancel">Cancelar</button>
                         <button type="submit" class="btn-admin btn-admin-primary">Salvar Imóvel</button>
                     </div>
-                </form>
-            </div>
+            </form>
         </div>
 
         <!-- ============================================== -->
@@ -731,12 +729,11 @@ function prado_welcome_render_admin_spa_wrapper() {
         <!-- ============================================== -->
         <div class="prado-modal" id="modal-guest">
             <div class="modal-overlay"></div>
-            <div class="modal-container">
+            <form onsubmit="saveGuest(event)" class="modal-container">
                 <div class="modal-header">
                     <h3 id="modal-guest-title">Cadastrar Novo Hóspede</h3>
-                    <button class="btn-modal-close"><i class="fa-solid fa-xmark"></i></button>
+                    <button class="btn-modal-close" type="button"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <form onsubmit="saveGuest(event)">
                     <div class="modal-body">
                         <input type="hidden" id="guest-id-field" value="" />
                         <div class="form-group">
@@ -762,8 +759,7 @@ function prado_welcome_render_admin_spa_wrapper() {
                         <button type="button" class="btn-admin btn-admin-secondary btn-modal-cancel">Cancelar</button>
                         <button type="submit" class="btn-admin btn-admin-primary">Salvar Hóspede</button>
                     </div>
-                </form>
-            </div>
+            </form>
         </div>
 
         <!-- ============================================== -->
@@ -771,12 +767,11 @@ function prado_welcome_render_admin_spa_wrapper() {
         <!-- ============================================== -->
         <div class="prado-modal" id="modal-reservation">
             <div class="modal-overlay"></div>
-            <div class="modal-container">
+            <form onsubmit="saveReservation(event)" class="modal-container">
                 <div class="modal-header">
                     <h3 id="modal-reservation-title">Nova Reserva</h3>
-                    <button class="btn-modal-close"><i class="fa-solid fa-xmark"></i></button>
+                    <button class="btn-modal-close" type="button"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <form onsubmit="saveReservation(event)">
                     <div class="modal-body">
                         <input type="hidden" id="reservation-id-field" value="" />
                         
@@ -819,8 +814,7 @@ function prado_welcome_render_admin_spa_wrapper() {
                         <button type="button" class="btn-admin btn-admin-secondary btn-modal-cancel">Cancelar</button>
                         <button type="submit" class="btn-admin btn-admin-primary">Salvar Reserva & Gerar Guia</button>
                     </div>
-                </form>
-            </div>
+            </form>
         </div>
 
         <!-- ============================================== -->
